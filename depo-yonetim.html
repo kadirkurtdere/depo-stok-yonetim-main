@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Depo Yönetim Sistemi</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500;600&family=Figtree:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#eceae4;--surface:#fff;--surface2:#f7f5f1;--border:#d5cfc5;--border2:#ece8e2;
+  --text:#1a1714;--muted:#8a8078;--accent:#2563eb;--accent-soft:#dbeafe;
+  --green:#16a34a;--green-soft:#dcfce7;--green-border:#86efac;
+  --orange:#ea580c;--orange-soft:#fff7ed;--slot-empty:#f4f2ee;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 4px 24px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;min-height:100vh;}
+
+/* ── HEADER ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:var(--shadow);}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-mark{width:36px;height:36px;background:var(--text);display:flex;align-items:center;justify-content:center;border-radius:6px;font-family:'DM Serif Display',serif;font-size:19px;color:#fff;}
+.logo-text h1{font-size:15px;font-weight:700;}
+.logo-text span{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:1px;}
+.stat-chips{display:flex;gap:8px;}
+.chip{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:4px 13px 4px 9px;font-size:12px;}
+.chip-dot{width:7px;height:7px;border-radius:50%;}
+.chip-dot.g{background:var(--green);}.chip-dot.o{background:var(--orange);}.chip-dot.b{background:var(--accent);}
+.chip strong{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;}
+
+/* ── VIEWS ── */
+.view{display:none;}.view.active{display:block;}
+
+/* ── SELECTION VIEW ── */
+#view-selection{padding:40px 32px;}
+.sel-title{text-align:center;margin-bottom:8px;}
+.sel-title h2{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);}
+.sel-title p{color:var(--muted);font-size:14px;margin-top:4px;}
+.cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:860px;margin:32px auto 0;}
+@media(max-width:700px){.cards-grid{grid-template-columns:1fr 1fr;}}
+
+/* ── CABINET CARD ── */
+.cab-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:16px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);}
+.cab-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:rgba(37,99,235,.3);}
+.cab-preview{position:relative;}
+.cab-preview-frame{background:#e2e8f0;border:3px solid #334155;border-radius:5px;padding:5px;display:grid;gap:2px;}
+.cab-preview-cell{background:#f1f5f9;border-radius:1px;}
+.cab-card-name{font-family:'DM Serif Display',serif;font-size:17px;text-align:center;color:var(--text);}
+.cab-card-occ{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;text-align:center;}
+.cab-card-occ span{color:var(--green);font-weight:600;}
+.cab-btn{background:var(--accent-soft);color:var(--accent);border:1px solid #bfdbfe;border-radius:20px;padding:5px 16px;font-size:12px;font-weight:600;font-family:'Figtree',sans-serif;cursor:pointer;transition:all .15s;}
+.cab-btn:hover{background:var(--accent);color:#fff;}
+
+/* ── DETAIL VIEW ── */
+#view-detail{padding:24px 32px;}
+.detail-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;background:var(--surface);padding:12px 18px;border-radius:10px;border:1px solid var(--border);box-shadow:var(--shadow);}
+.back-btn{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--text);}
+.back-btn:hover{background:var(--border);}.back-btn svg{width:14px;height:14px;}
+.detail-title{font-family:'DM Serif Display',serif;font-size:22px;}
+.detail-stats{font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.detail-stats b{color:var(--green);}
+
+/* ── A CABINET GRID ── */
+.a-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+.cab-inner-head{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 16px;font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:1px;}
+.a-grid-area{padding:12px 14px;overflow-x:auto;}
+.a-col-heads{display:flex;gap:4px;margin-bottom:5px;padding-left:26px;}
+.a-col-h{width:100px;text-align:center;font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.a-row{display:flex;gap:4px;margin-bottom:4px;align-items:stretch;}
+.row-num{width:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted);}
+
+/* ── BC CABINET GRID ── */
+.bc-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);max-width:600px;margin:0 auto;}
+.bc-grid-area{padding:12px 16px;display:flex;flex-direction:column;gap:6px;}
+
+/* ── SLOT ── */
+.slot{border:1px solid var(--border);border-radius:5px;background:var(--slot-empty);cursor:pointer;transition:all .15s;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
+.slot:hover{border-color:var(--accent);background:var(--accent-soft);transform:translateY(-1px);box-shadow:0 3px 10px rgba(37,99,235,.15);z-index:2;}
+.slot.filled{background:var(--green-soft);border-color:var(--green-border);}
+.slot.selected{border-color:var(--accent)!important;background:var(--accent-soft)!important;box-shadow:0 0 0 2px rgba(37,99,235,.25)!important;}
+
+/* A slot — small */
+.slot-a{width:100px;min-height:36px;}
+.slot-a .slot-name{font-size:9px;font-weight:700;color:var(--green);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slot-a .slot-qty{font-size:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.slot-a .slot-empty-lbl{font-size:8px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.slot-a .slot-id{font-size:7px;color:var(--muted);opacity:.6;font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+
+/* BC slot — full-width shelf */
+.slot-bc{width:100%;min-height:56px;flex-direction:row;align-items:center;gap:12px;padding:10px 16px;}
+.slot-bc .shelf-num-tag{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-width:36px;font-weight:600;}
+.slot-bc .shelf-content{flex:1;}
+.slot-bc .slot-name{font-size:14px;font-weight:700;color:var(--green);}
+.slot-bc .slot-qty{font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+.slot-bc .slot-empty-lbl{font-size:12px;color:var(--muted);}
+.slot-bc .slot-arrow{font-size:18px;color:var(--muted);opacity:.4;}
+.slot-bc:hover .slot-arrow{color:var(--accent);opacity:1;}
+.slot-bc.filled .slot-arrow{color:var(--green);opacity:.6;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(3px);}
+.modal-overlay.open{display:flex;animation:fadeIn .15s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;width:340px;box-shadow:var(--shadow-lg);animation:slideUp .2s ease;}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.modal-title{font-family:'DM Serif Display',serif;font-size:18px;}
+.modal-close{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--muted);transition:all .15s;}
+.modal-close:hover{background:var(--border);}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase;}
+.form-group input{width:100%;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:'Figtree',sans-serif;font-size:14px;background:var(--surface2);color:var(--text);outline:none;transition:border-color .15s;}
+.form-group input:focus{border-color:var(--accent);background:#fff;}
+.modal-btns{display:flex;gap:8px;margin-top:18px;}
+.m-btn{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-family:'Figtree',sans-serif;font-size:13px;font-weight:600;transition:all .15s;}
+.m-save{background:var(--green);color:#fff;}.m-save:hover{background:#15803d;}
+.m-clear{background:var(--orange-soft);color:var(--orange);border:1px solid #fbd5b5;}.m-clear:hover{background:#ffedd5;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">D</div>
+    <div class="logo-text">
+      <h1>Depo Yönetim Sistemi</h1>
+      <span>STOK TAKİP v2.0</span>
+    </div>
+  </div>
+  <div class="stat-chips">
+    <div class="chip"><div class="chip-dot b"></div><strong id="s-total">0</strong><span>toplam</span></div>
+    <div class="chip"><div class="chip-dot g"></div><strong id="s-filled">0</strong><span>dolu</span></div>
+    <div class="chip"><div class="chip-dot o"></div><strong id="s-empty">0</strong><span>boş</span></div>
+    <div class="chip"><div class="chip-dot b"></div><strong id="s-pct">0%</strong><span>doluluk</span></div>
+  </div>
+</header>
+
+<!-- VIEW: SELECTION -->
+<div class="view active" id="view-selection">
+  <div class="sel-title">
+    <h2>Hangi dolabı görmek istiyorsunuz?</h2>
+    <p>İçeriğini görüntülemek veya düzenlemek istediğiniz dolabı seçin.</p>
+  </div>
+  <div class="cards-grid" id="cards-grid"></div>
+</div>
+
+<!-- VIEW: DETAIL -->
+<div class="view" id="view-detail">
+  <div class="detail-topbar">
+    <button class="back-btn" onclick="showSelection()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Tüm Dolaplar
+    </button>
+    <div style="text-align:center">
+      <div class="detail-title" id="detail-title">—</div>
+      <div class="detail-stats" id="detail-stats"></div>
+    </div>
+    <div style="width:120px"></div>
+  </div>
+  <div id="detail-body"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">Raf Düzenle</div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="form-group">
+      <label>Ürün Adı / Kodu</label>
+      <input type="text" id="inp-name" placeholder="Örn: M3 Vida, Kablo Klips...">
+    </div>
+    <div class="form-group">
+      <label>Miktar</label>
+      <input type="number" id="inp-qty" placeholder="Örn: 150">
+    </div>
+    <div class="modal-btns">
+      <button class="m-btn m-save" onclick="saveSlot()">✓ Kaydet</button>
+      <button class="m-btn m-clear" onclick="clearSlot()">✕ Temizle</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────
+const CABS = [
+  { id:'A',  name:'Dolap A',  sub:'22×6 Raf · 132 Slot', rows:22, cols:6,  type:'a' },
+  { id:'B1', name:'Dolap B-1',sub:'6 Raf',               rows:6,  cols:1,  type:'b' },
+  { id:'B2', name:'Dolap B-2',sub:'6 Raf',               rows:6,  cols:1,  type:'b' },
+  { id:'B3', name:'Dolap B-3',sub:'6 Raf',               rows:6,  cols:1,  type:'b' },
+  { id:'C1', name:'Dolap C-1',sub:'3 Raf',               rows:3,  cols:1,  type:'c' },
+  { id:'C2', name:'Dolap C-2',sub:'3 Raf',               rows:3,  cols:1,  type:'c' },
+];
+
+let db = JSON.parse(localStorage.getItem('depo_v2') || '{}');
+let activeCabId = null;
+let activeSlotKey = null;
+
+function save() { localStorage.setItem('depo_v2', JSON.stringify(db)); }
+function slotKey(cabId, r, c) { return cabId+'|'+r+'|'+c; }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function totalSlots() {
+  return CABS.reduce((s,c)=>s+c.rows*c.cols, 0);
+}
+function filledSlots() {
+  return Object.keys(db).filter(k=>db[k]&&db[k].name).length;
+}
+
+function updateGlobalStats() {
+  const total = totalSlots(), filled = filledSlots();
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-filled').textContent = filled;
+  document.getElementById('s-empty').textContent = total - filled;
+  document.getElementById('s-pct').textContent = total ? Math.round(filled/total*100)+'%' : '0%';
+}
+
+function cabStats(cab) {
+  let filled=0, total=cab.rows*cab.cols;
+  for(let r=1;r<=cab.rows;r++)
+    for(let c=1;c<=cab.cols;c++)
+      if(db[slotKey(cab.id,r,c)]?.name) filled++;
+  return {filled,total,pct:total?Math.round(filled/total*100):0};
+}
+
+// ── SELECTION VIEW ───────────────────────────────────────────────
+function buildSelection() {
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = '';
+  CABS.forEach(cab => {
+    const {filled, total, pct} = cabStats(cab);
+    const card = document.createElement('div');
+    card.className = 'cab-card';
+    card.onclick = () => showDetail(cab.id);
+    card.innerHTML = `
+      ${buildPreviewIcon(cab)}
+      <div>
+        <div class="cab-card-name">${cab.name}</div>
+        <div class="cab-card-occ"><span>${filled}</span>/${total} dolu · %${pct}</div>
+      </div>
+      <div class="cab-btn">İçeriğe Bak →</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function buildPreviewIcon(cab) {
+  let frameStyle, cells = '';
+  if (cab.type === 'a') {
+    // 22×6 preview: show 11×3 scaled down
+    frameStyle = 'width:72px;height:96px;grid-template-rows:repeat(11,1fr);grid-template-columns:repeat(3,1fr);';
+    for(let i=0;i<33;i++) cells += '<div class="cab-preview-cell"></div>';
+  } else if (cab.type === 'b') {
+    frameStyle = 'width:54px;height:96px;grid-template-rows:repeat(6,1fr);grid-template-columns:1fr;';
+    for(let i=0;i<6;i++) cells += '<div class="cab-preview-cell"></div>';
+  } else {
+    frameStyle = 'width:72px;height:72px;grid-template-rows:repeat(3,1fr);grid-template-columns:1fr;';
+    for(let i=0;i<3;i++) cells += '<div class="cab-preview-cell"></div>';
+  }
+  return `<div class="cab-preview"><div class="cab-preview-frame" style="${frameStyle}">${cells}</div></div>`;
+}
+
+// ── DETAIL VIEW ──────────────────────────────────────────────────
+function showDetail(cabId) {
+  activeCabId = cabId;
+  document.getElementById('view-selection').classList.remove('active');
+  document.getElementById('view-detail').classList.add('active');
+  renderDetail(cabId);
+  updateGlobalStats();
+}
+
+function showSelection() {
+  activeCabId = null;
+  document.getElementById('view-detail').classList.remove('active');
+  document.getElementById('view-selection').classList.add('active');
+  buildSelection();
+  updateGlobalStats();
+}
+
+function renderDetail(cabId) {
+  const cab = CABS.find(c=>c.id===cabId);
+  const {filled, total, pct} = cabStats(cab);
+
+  document.getElementById('detail-title').textContent = cab.name + ' · ' + cab.sub;
+  document.getElementById('detail-stats').innerHTML =
+    `<b>${filled}</b> / ${total} dolu &nbsp;·&nbsp; %${pct} doluluk`;
+
+  const body = document.getElementById('detail-body');
+  body.innerHTML = '';
+
+  if (cab.type === 'a') {
+    body.appendChild(buildAGrid(cab));
+  } else {
+    body.appendChild(buildBCGrid(cab));
+  }
+}
+
+// A cabinet: 22 rows × 6 cols
+function buildAGrid(cab) {
+  const wrap = document.createElement('div');
+  wrap.className = 'a-wrap';
+  wrap.innerHTML = `<div class="cab-inner-head">SATIR / RAF NUMARASI  ←  KOLON NUMARASI →</div>`;
+  const area = document.createElement('div');
+  area.className = 'a-grid-area';
+
+  // col headers
+  let heads = '<div class="a-col-heads"><div style="width:22px;min-width:22px"></div>';
+  for(let c=1;c<=cab.cols;c++)
+    heads += `<div class="a-col-h" style="width:100px">KOL ${c}</div>`;
+  heads += '</div>';
+  area.innerHTML = heads;
+
+  // rows
+  for(let r=1;r<=cab.rows;r++) {
+    const row = document.createElement('div');
+    row.className = 'a-row';
+    row.innerHTML = `<div class="row-num">${r}</div>`;
+    for(let c=1;c<=cab.cols;c++) {
+      row.appendChild(buildSlotA(cab.id, r, c));
+    }
+    area.appendChild(row);
+  }
+  wrap.appendChild(area);
+  return wrap;
+}
+
+function buildSlotA(cabId, r, c) {
+  const k = slotKey(cabId, r, c);
+  const el = document.createElement('div');
+  el.className = 'slot slot-a' + (db[k]?.name ? ' filled' : '');
+  el.dataset.key = k;
+  el.innerHTML = slotAHTML(k, r, c);
+  el.onclick = () => openModal(k, cabId, r, c);
+  return el;
+}
+
+function slotAHTML(k, r, c) {
+  const d = db[k];
+  if(d?.name) return `
+    <div class="slot-name">${esc(d.name)}</div>
+    <div class="slot-qty">${d.qty ? d.qty+' adet' : ''}</div>
+    <div class="slot-id">R${r}C${c}</div>`;
+  return `<div class="slot-empty-lbl">boş</div><div class="slot-id">R${r}·C${c}</div>`;
+}
+
+// BC cabinet: rows × 1 col full-width
+function buildBCGrid(cab) {
+  const wrap = document.createElement('div');
+  wrap.className = 'bc-wrap';
+  wrap.innerHTML = `<div class="cab-inner-head">${cab.name.toUpperCase()} · ${cab.sub.toUpperCase()}</div>`;
+  const area = document.createElement('div');
+  area.className = 'bc-grid-area';
+  for(let r=1;r<=cab.rows;r++) {
+    area.appendChild(buildSlotBC(cab.id, r));
+  }
+  wrap.appendChild(area);
+  return wrap;
+}
+
+function buildSlotBC(cabId, r) {
+  const k = slotKey(cabId, r, 1);
+  const el = document.createElement('div');
+  el.className = 'slot slot-bc' + (db[k]?.name ? ' filled' : '');
+  el.dataset.key = k;
+  el.innerHTML = slotBCHTML(k, r);
+  el.onclick = () => openModal(k, cabId, r, 1);
+  return el;
+}
+
+function slotBCHTML(k, r) {
+  const d = db[k];
+  if(d?.name) return `
+    <div class="shelf-num-tag">RAF ${r}</div>
+    <div class="shelf-content">
+      <div class="slot-name">${esc(d.name)}</div>
+      <div class="slot-qty">${d.qty ? d.qty+' adet' : ''}</div>
+    </div>
+    <div class="slot-arrow">→</div>`;
+  return `
+    <div class="shelf-num-tag">RAF ${r}</div>
+    <div class="shelf-content"><div class="slot-empty-lbl">Boş — eklemek için tıklayın</div></div>
+    <div class="slot-arrow">+</div>`;
+}
+
+// ── MODAL ────────────────────────────────────────────────────────
+function openModal(k, cabId, r, c) {
+  activeSlotKey = k;
+  const cab = CABS.find(x=>x.id===cabId);
+  document.getElementById('modal-title').textContent =
+    cab.type==='a' ? `${cab.name} · R${r} C${c}` : `${cab.name} · Raf ${r}`;
+  const d = db[k];
+  document.getElementById('inp-name').value = d?.name || '';
+  document.getElementById('inp-qty').value  = d?.qty  || '';
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('inp-name').focus();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  activeSlotKey = null;
+}
+
+function saveSlot() {
+  if(!activeSlotKey) return;
+  const name = document.getElementById('inp-name').value.trim();
+  const qty  = document.getElementById('inp-qty').value.trim();
+  if(!name) { document.getElementById('inp-name').focus(); return; }
+  db[activeSlotKey] = { name, qty };
+  save();
+  refreshSlot(activeSlotKey);
+  updateDetailStats();
+  updateGlobalStats();
+  closeModal();
+}
+
+function clearSlot() {
+  if(!activeSlotKey) return;
+  delete db[activeSlotKey];
+  save();
+  refreshSlot(activeSlotKey);
+  updateDetailStats();
+  updateGlobalStats();
+  closeModal();
+}
+
+function refreshSlot(k) {
+  const el = document.querySelector(`.slot[data-key="${CSS.escape(k)}"]`);
+  if(!el) return;
+  const parts = k.split('|');
+  const cabId = parts[0], r = +parts[1], c = +parts[2];
+  const cab = CABS.find(x=>x.id===cabId);
+  const filled = !!db[k]?.name;
+  el.className = `slot ${cab.type==='a'?'slot-a':'slot-bc'}${filled?' filled':''}`;
+  el.innerHTML = cab.type==='a' ? slotAHTML(k,r,c) : slotBCHTML(k,r);
+}
+
+function updateDetailStats() {
+  if(!activeCabId) return;
+  const cab = CABS.find(c=>c.id===activeCabId);
+  const {filled,total,pct} = cabStats(cab);
+  document.getElementById('detail-stats').innerHTML =
+    `<b>${filled}</b> / ${total} dolu &nbsp;·&nbsp; %${pct} doluluk`;
+}
+
+// ── KEYBOARD ─────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape') closeModal();
+  if(e.key==='Enter' && activeSlotKey) saveSlot();
+});
+document.getElementById('modal').addEventListener('click', e => {
+  if(e.target===e.currentTarget) closeModal();
+});
+
+// ── INIT ─────────────────────────────────────────────────────────
+buildSelection();
+updateGlobalStats();
+</script>
+</body>
+</html>
